@@ -5,13 +5,14 @@ import Mail from '@ioc:Adonis/Addons/Mail'
 
 import User from 'App/Models/User'
 import Address from 'App/Models/Address'
-import UserValidator from 'App/Validators/UserValidator'
+// import UserValidator from 'App/Validators/UserValidator'
 import Env from '@ioc:Adonis/Core/Env'
 import UserRepository from 'App/Repositories/UserRepository'
 import CustomHandlerException from 'App/Exceptions/CustomHandlerException'
 import Hash from '@ioc:Adonis/Core/Hash'
-import AddressValidator from 'App/Validators/AddressValidator'
+// import AddressValidator from 'App/Validators/AddressValidator'
 import RegisterValidator from 'App/Validators/RegisterValidator'
+import Application from '@ioc:Adonis/Core/Application'
 
 export default class AuthController {
   protected userRepository: UserRepository
@@ -41,7 +42,7 @@ export default class AuthController {
       })
 
       if (user) {
-        const address = await Address.create({
+        await Address.create({
           user_id: user.id,
           address: request.input('address'),
           regencies_id: request.input('villages_id'),
@@ -109,6 +110,55 @@ export default class AuthController {
       return response.json({
         message: 'Login Successfully',
         data: token,
+      })
+    } catch (error) {
+      return response.status(422).json({ errors: error })
+    }
+  }
+
+  public async update({ request, response, auth }: HttpContextContract) {
+    const user = await auth.authenticate()
+
+    const avatar = request.file('avatar', {
+      size: '2mb',
+      extnames: ['jpg', 'png'],
+    })
+    let fileName = 'avatar-' + user.id
+
+    const userData = {
+      name: request.input('name'),
+      username: request.input('username'),
+      email: request.input('email'),
+      password: request.input('password'),
+      avatar: fileName,
+    }
+
+    const addressData = {
+      address: request.input('address'),
+      regencies_id: request.input('villages_id'),
+      villages_id: request.input('districts_id'),
+      districts_id: request.input('regencies_id'),
+      provinces_id: request.input('provinces_id'),
+      latitude: request.input('latitude'),
+      longitude: request.input('longitude'),
+    }
+
+    try {
+      if (Object.keys(userData).length === 0) {
+        await User.query().where('id', user.id).update(userData)
+      }
+      if (Object.keys(addressData).length === 0) {
+        await Address.query().where('user_id', user.id).update(addressData)
+      }
+
+      if (avatar) {
+        await avatar.move(Application.tmpPath('uploads/images/avatar'), {
+          name: fileName + '.' + avatar.extname,
+        })
+      }
+
+      return response.status(202).json({
+        message: 'Update Data Successfully',
       })
     } catch (error) {
       return response.status(422).json({ errors: error })

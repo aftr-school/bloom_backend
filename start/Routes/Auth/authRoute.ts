@@ -4,6 +4,7 @@ Route.group(() => {
   Route.post('/register', 'AuthController.register').as('auth.register')
   Route.post('/login', 'AuthController.login').as('auth.login')
   Route.get('/user', 'AuthController.user').as('auth.user')
+  Route.post('/user/update', 'AuthController.update').as('auth.update')
   Route.get('/verify/:verificationCode', 'AuthController.verify').as('auth.verify')
   Route.post('/resendverification', 'AuthController.resendVerification').as(
     'auth.resendVerification'
