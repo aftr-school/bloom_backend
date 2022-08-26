@@ -4,29 +4,54 @@ import { schema } from '@ioc:Adonis/Core/Validator'
 import Mail from '@ioc:Adonis/Addons/Mail'
 
 import User from 'App/Models/User'
+import Address from 'App/Models/Address'
 import UserValidator from 'App/Validators/UserValidator'
-import Role from 'App/Models/Role'
 import Env from '@ioc:Adonis/Core/Env'
+import UserRepository from 'App/Repositories/UserRepository'
+import CustomHandlerException from 'App/Exceptions/CustomHandlerException'
+import Hash from '@ioc:Adonis/Core/Hash'
+import AddressValidator from 'App/Validators/AddressValidator'
+import RegisterValidator from 'App/Validators/RegisterValidator'
 
 export default class AuthController {
+  protected userRepository: UserRepository
+
+  constructor() {
+    this.userRepository = new UserRepository()
+  }
+
   public async register({ request, response }: HttpContextContract) {
+    await request.validate(RegisterValidator)
+
+    if (await this.userRepository.checkRolesAdmin(request.input('role_id'))) {
+      throw new CustomHandlerException('Cannot User this Roles', 403)
+    }
+
     try {
-      await request.validate(UserValidator)
-
-      if (!Role.query().where('id', 'role_id')) {
-        throw new Error('Role is invalid')
-      }
-
       const verificationCode: string =
         Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
 
       const user = await User.create({
         name: request.input('name'),
         email: request.input('email'),
+        username: request.input('username'),
         password: request.input('password'),
         role_id: request.input('role_id'),
         verification_code: verificationCode,
       })
+
+      if (user) {
+        const address = await Address.create({
+          user_id: user.id,
+          address: request.input('address'),
+          regencies_id: request.input('villages_id'),
+          villages_id: request.input('districts_id'),
+          districts_id: request.input('regencies_id'),
+          provinces_id: request.input('provinces_id'),
+          latitude: request.input('latitude'),
+          longitude: request.input('longitude'),
+        })
+      }
 
       const completeUrl = request.completeUrl()
       const url = completeUrl.split('/')
@@ -60,14 +85,24 @@ export default class AuthController {
 
   public async login({ request, response, auth }: HttpContextContract) {
     const userSchema = schema.create({
-      email: schema.string({ trim: true }),
+      username: schema.string({ trim: true }),
       password: schema.string({ trim: true }),
     })
     try {
       await request.validate({ schema: userSchema })
-      const { email, password } = request.all()
+      const { username, password } = request.all()
 
-      const token = await auth.use('api').attempt(email, password, {
+      const user = await User.query()
+        .where('email', username)
+        .orWhere('username', username)
+        .firstOrFail()
+
+      // Verify password
+      if (!(await Hash.verify(user.password, password))) {
+        return response.unauthorized('Invalid credentials')
+      }
+
+      const token = await auth.use('api').generate(user, {
         expiresIn: '720mins',
       })
 
@@ -76,15 +111,23 @@ export default class AuthController {
         data: token,
       })
     } catch (error) {
-      return response.status(422).json({ errors: error.messages })
+      return response.status(422).json({ errors: error })
     }
   }
 
   public async user({ response, auth }: HttpContextContract) {
     const user = await auth.authenticate()
+
+    const userData = await User.query()
+      .where('id', user.id)
+      .preload('role')
+      .preload('address', (address) => {
+        address.preload('regency').preload('district').preload('province').preload('village')
+      })
+
     return response.json({
       message: 'Get User Successfully',
-      data: user,
+      data: userData,
     })
   }
 

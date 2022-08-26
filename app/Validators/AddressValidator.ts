@@ -1,7 +1,7 @@
 import { schema, CustomMessages, rules } from '@ioc:Adonis/Core/Validator'
 import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 
-export default class UserValidator {
+export default class AddressValidator {
   constructor(protected ctx: HttpContextContract) {}
 
   /*
@@ -24,14 +24,13 @@ export default class UserValidator {
    *    ```
    */
   public schema = schema.create({
-    name: schema.string({}, [rules.minLength(3)]),
-    username: schema.string({}, [
-      rules.unique({ table: 'users', column: 'username' }),
-      rules.minLength(6),
-    ]),
-    email: schema.string({}, [rules.email(), rules.unique({ table: 'users', column: 'email' })]),
-    password: schema.string({}, [rules.minLength(6)]),
-    role_id: schema.number(),
+    address: schema.string(),
+    regencies_id: schema.number(),
+    villages_id: schema.number(),
+    districts_id: schema.number(),
+    provinces_id: schema.number(),
+    latitude: schema.string(),
+    longitude: schema.string(),
   })
 
   /**
@@ -46,20 +45,12 @@ export default class UserValidator {
    *
    */
   public messages: CustomMessages = {
-    'name.required': 'Name is required',
-    'name.minLength': 'Name must be at least 3 characters',
-
-    'username.required': 'Username is required',
-    'username.unique': 'Username is already in use',
-    'username.minLength': 'Username must be at least 6 characters',
-
-    'email.required': 'Email is required',
-    'email.email': 'Email must be a valid email',
-    'email.unique': 'Email is already in use',
-
-    'password.required': 'Password is required',
-    'password.minLength': 'Password must be at least 6 characters',
-
-    'role_id.required': 'Role is required',
+    'address.required': 'Address Is Required',
+    'regencies_id.required': 'Regencies Is Required',
+    'villages_id.required': 'Villages Is Required',
+    'districts_id.required': 'districts Is Required',
+    'provinces_id.required': 'Provinces Is Required',
+    'latitude.required': 'Latitude Is Required',
+    'longitude.required': 'Longitude Is Required',
   }
 }

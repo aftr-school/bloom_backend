@@ -1,7 +1,7 @@
 import { schema, CustomMessages, rules } from '@ioc:Adonis/Core/Validator'
 import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 
-export default class UserValidator {
+export default class RegisterValidator {
   constructor(protected ctx: HttpContextContract) {}
 
   /*
@@ -32,6 +32,14 @@ export default class UserValidator {
     email: schema.string({}, [rules.email(), rules.unique({ table: 'users', column: 'email' })]),
     password: schema.string({}, [rules.minLength(6)]),
     role_id: schema.number(),
+
+    address: schema.string(),
+    regencies_id: schema.number(),
+    villages_id: schema.number(),
+    districts_id: schema.number(),
+    provinces_id: schema.number(),
+    latitude: schema.string(),
+    longitude: schema.string(),
   })
 
   /**
@@ -61,5 +69,13 @@ export default class UserValidator {
     'password.minLength': 'Password must be at least 6 characters',
 
     'role_id.required': 'Role is required',
+
+    'address.required': 'Address Is Required',
+    'regencies_id.required': 'Regencies Is Required',
+    'villages_id.required': 'Villages Is Required',
+    'districts_id.required': 'districts Is Required',
+    'provinces_id.required': 'Provinces Is Required',
+    'latitude.required': 'Latitude Is Required',
+    'longitude.required': 'Longitude Is Required',
   }
 }
