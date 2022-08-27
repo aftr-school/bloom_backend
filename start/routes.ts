@@ -25,3 +25,5 @@ Route.get('/', async () => {
 })
 
 import './Routes/Auth/authRoute'
+import './Routes/ProductType/ProductTypeRoute'
+import './Routes/ProductCategory/ProductCategoryRoute'

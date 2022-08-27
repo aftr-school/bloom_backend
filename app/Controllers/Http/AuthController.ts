@@ -1,6 +1,6 @@
 import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 // import Database from '@ioc:Adonis/Lucid/Database'
-import { schema } from '@ioc:Adonis/Core/Validator'
+import { schema, rules } from '@ioc:Adonis/Core/Validator'
 import Mail from '@ioc:Adonis/Addons/Mail'
 
 import User from 'App/Models/User'
@@ -13,12 +13,15 @@ import Hash from '@ioc:Adonis/Core/Hash'
 // import AddressValidator from 'App/Validators/AddressValidator'
 import RegisterValidator from 'App/Validators/RegisterValidator'
 import Application from '@ioc:Adonis/Core/Application'
+import AddressRepository from 'App/Repositories/AddressRepository'
 
 export default class AuthController {
   protected userRepository: UserRepository
+  protected addressRepository: AddressRepository
 
   constructor() {
     this.userRepository = new UserRepository()
+    this.addressRepository = new AddressRepository()
   }
 
   public async register({ request, response }: HttpContextContract) {
@@ -119,11 +122,21 @@ export default class AuthController {
   public async update({ request, response, auth }: HttpContextContract) {
     const user = await auth.authenticate()
 
+    if (request.input('username')) {
+      const userSchema = schema.create({
+        username: schema.string({}, [
+          rules.unique({ table: 'users', column: 'username' }),
+          rules.minLength(6),
+        ]),
+      })
+      await request.validate({ schema: userSchema })
+    }
+
     const avatar = request.file('avatar', {
       size: '2mb',
       extnames: ['jpg', 'png'],
     })
-    let fileName = 'avatar-' + user.id
+    let fileName = 'avatar-' + user.username
 
     const userData = {
       name: request.input('name'),
@@ -168,16 +181,27 @@ export default class AuthController {
   public async user({ response, auth }: HttpContextContract) {
     const user = await auth.authenticate()
 
-    const userData = await User.query()
+    let userData = await User.query()
       .where('id', user.id)
       .preload('role')
-      .preload('address', (address) => {
-        address.preload('regency').preload('district').preload('province').preload('village')
-      })
+      .preload('address')
+      .first()
+
+    if (!userData) {
+      throw new CustomHandlerException('User Not Found')
+    }
+
+    const address = await this.addressRepository.getAddress(
+      userData.address.villages_id,
+      userData.address.districts_id,
+      userData.address.regencies_id,
+      userData.address.provinces_id
+    )
 
     return response.json({
       message: 'Get User Successfully',
       data: userData,
+      address: address,
     })
   }
 
