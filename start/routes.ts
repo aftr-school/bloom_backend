@@ -25,5 +25,9 @@ Route.get('/', async () => {
 })
 
 import './Routes/Auth/authRoute'
+import './Routes/Auth/roleRoute'
+import './Routes/Auth/userRoute'
 import './Routes/ProductType/ProductTypeRoute'
 import './Routes/ProductCategory/ProductCategoryRoute'
+import './Routes/Product/Product'
+import './Routes/Address/addressRoute'

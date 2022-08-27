@@ -1,17 +1,13 @@
 import BaseSchema from '@ioc:Adonis/Lucid/Schema'
 
 export default class extends BaseSchema {
-  protected tableName = 'product_distributors'
+  protected tableName = 'product_images'
 
   public async up() {
     this.schema.createTable(this.tableName, (table) => {
       table.increments('id')
-      table.integer('user_id').unsigned().references('id').inTable('users').onDelete('CASCADE')
-        .notNullable
-
-      table.string('product')
-      table.integer('price').comment('Buying Price')
-      table.enum('uom', ['liter', 'kg', 'unit'])
+      table.integer('product_id').unsigned().references('id').inTable('products')
+      table.text('images')
 
       table.timestamps(true, true)
     })

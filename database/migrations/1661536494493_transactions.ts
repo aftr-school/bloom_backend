@@ -14,18 +14,13 @@ export default class extends BaseSchema {
         .references('id')
         .inTable('users')
         .onDelete('CASCADE').notNullable
-      table
-        .integer('product_id')
-        .unsigned()
-        .references('id')
-        .inTable('products')
-        .onDelete('CASCADE').notNullable
+
+      table.string('product')
 
       table.integer('heavy_mass').unsigned
       table.boolean('service')
 
-      table.dateTime('selling_dates')
-      table.dateTime('buying_dates')
+      table.dateTime('transaction_dates')
 
       table.timestamps(true, true)
     })

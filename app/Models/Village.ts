@@ -8,6 +8,9 @@ export default class Village extends BaseModel {
   @column()
   public name: string
 
+  @column()
+  public district_id: number
+
   @column.dateTime({ autoCreate: true })
   public createdAt: DateTime
 

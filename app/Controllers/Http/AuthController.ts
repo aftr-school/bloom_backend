@@ -28,7 +28,9 @@ export default class AuthController {
     await request.validate(RegisterValidator)
 
     if (await this.userRepository.checkRolesAdmin(request.input('role_id'))) {
-      throw new CustomHandlerException('Cannot User this Roles', 403)
+      return response
+        .status(422)
+        .json({ status: 'error', message: 'Cannot Use this Roles', data: '' })
     }
 
     try {
@@ -42,6 +44,7 @@ export default class AuthController {
         password: request.input('password'),
         role_id: request.input('role_id'),
         verification_code: verificationCode,
+        isVerified: true,
       })
 
       if (user) {
@@ -57,24 +60,25 @@ export default class AuthController {
         })
       }
 
-      const completeUrl = request.completeUrl()
-      const url = completeUrl.split('/')
-      const protocol = url[0]
-      const domain = url[2]
+      // const completeUrl = request.completeUrl()
+      // const url = completeUrl.split('/')
+      // const protocol = url[0]
+      // const domain = url[2]
 
-      await Mail.send((message) => {
-        message
-          .from(Env.get('MAIL_FROM_ADDRESS'))
-          .to(user.email)
-          .subject('Verify your email')
-          .htmlView('email/verification', {
-            verificationCode: verificationCode,
-            domain: domain,
-            protocol: protocol,
-          })
-      })
+      // await Mail.send((message) => {
+      //   message
+      //     .from(Env.get('MAIL_FROM_ADDRESS'))
+      //     .to(user.email)
+      //     .subject('Verify your email')
+      //     .htmlView('email/verification', {
+      //       verificationCode: verificationCode,
+      //       domain: domain,
+      //       protocol: protocol,
+      //     })
+      // })
 
       response.created({
+        status: 'success',
         message: 'Register Successfully',
         data: {
           name: user.name,
@@ -83,7 +87,7 @@ export default class AuthController {
         },
       })
     } catch (error) {
-      return response.status(422).json({ errors: error })
+      return response.status(422).json({ status: 'error', message: error.message, data: '' })
     }
   }
 
@@ -96,14 +100,19 @@ export default class AuthController {
       await request.validate({ schema: userSchema })
       const { username, password } = request.all()
 
-      const user = await User.query()
-        .where('email', username)
-        .orWhere('username', username)
-        .firstOrFail()
+      const user = await User.query().where('email', username).orWhere('username', username).first()
+
+      if (!user) {
+        return response
+          .status(422)
+          .json({ status: 'error', message: 'Username or Email not Found', data: '' })
+      }
 
       // Verify password
       if (!(await Hash.verify(user.password, password))) {
-        return response.unauthorized('Invalid credentials')
+        return response
+          .status(422)
+          .json({ status: 'error', message: 'Invalid credentials', data: '' })
       }
 
       const token = await auth.use('api').generate(user, {
@@ -111,11 +120,12 @@ export default class AuthController {
       })
 
       return response.json({
+        status: 'success',
         message: 'Login Successfully',
         data: token,
       })
     } catch (error) {
-      return response.status(422).json({ errors: error })
+      return response.status(422).json({ status: 'error', message: error.message, data: '' })
     }
   }
 
@@ -171,10 +181,12 @@ export default class AuthController {
       }
 
       return response.status(202).json({
+        status: 'success',
         message: 'Update Data Successfully',
+        data: '',
       })
     } catch (error) {
-      return response.status(422).json({ errors: error })
+      return response.status(422).json({ status: 'error', message: error.message, data: '' })
     }
   }
 
@@ -188,7 +200,7 @@ export default class AuthController {
       .first()
 
     if (!userData) {
-      throw new CustomHandlerException('User Not Found')
+      return response.status(404).json({ status: 'error', message: 'User Not Found', data: '' })
     }
 
     const address = await this.addressRepository.getAddress(
@@ -198,10 +210,11 @@ export default class AuthController {
       userData.address.provinces_id
     )
 
+    let data = { ...userData.$original, ...address }
+
     return response.json({
       message: 'Get User Successfully',
-      data: userData,
-      address: address,
+      data: data,
     })
   }
 
@@ -261,5 +274,13 @@ export default class AuthController {
     } catch (error) {
       return response.status(422).json({ errors: error })
     }
+  }
+
+  public async logout({ auth, response }: HttpContextContract) {
+    const user = await auth.logout()
+
+    return response.json({
+      message: 'Logout Success',
+    })
   }
 }

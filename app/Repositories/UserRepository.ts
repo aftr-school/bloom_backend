@@ -17,4 +17,14 @@ export default class UserRepository {
 
     return false
   }
+
+  public async checkRolesFarmer(id: number) {
+    const roles = await Role.findOrFail(id)
+
+    if (roles.id === 3) {
+      return true
+    }
+
+    return false
+  }
 }

@@ -2,6 +2,7 @@ import Regency from 'App/Models/Regency'
 import Village from 'App/Models/Village'
 import Province from 'App/Models/Province'
 import District from 'App/Models/District'
+import Address from 'App/Models/Address'
 
 export default class AddressRepository {
   public async getAddress(

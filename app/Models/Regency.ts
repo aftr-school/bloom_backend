@@ -8,6 +8,9 @@ export default class Regency extends BaseModel {
   @column()
   public name: string
 
+  @column()
+  public province_id: number
+
   @column.dateTime({ autoCreate: true })
   public createdAt: DateTime
 

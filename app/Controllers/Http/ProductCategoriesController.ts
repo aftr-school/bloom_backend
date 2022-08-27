@@ -7,22 +7,18 @@ export default class ProductCategoriesController {
   public async index({ response, auth, params }: HttpContextContract) {
     const user = await auth.authenticate()
 
-    let paginateModel = params.paginate
-    if (!paginateModel) {
-      paginateModel = 10
-    }
+    const productCategorys = await ProductCategory.query().orderBy('name', 'asc')
 
-    const ProductCategorys = await ProductCategory.query()
-      .orderBy('name', 'asc')
-      .paginate(paginateModel)
-
-    if (ProductCategorys.length === 0) {
-      throw new CustomHandlerException('No Product Categories found', 404)
+    if (productCategorys.length === 0) {
+      return response
+        .status(404)
+        .json({ status: 'error', message: 'No Product Categories found', data: '' })
     }
 
     return response.status(200).json({
+      status: 'success',
       message: 'Product Categories retrieved successfully',
-      data: ProductCategorys,
+      data: productCategorys,
     })
   }
 
@@ -37,17 +33,18 @@ export default class ProductCategoriesController {
     await request.validate({ schema: productTypeSchema })
 
     try {
-      const productCategory = ProductCategory.create({
+      const productCategory = await ProductCategory.create({
         name: request.input('name'),
         product_type_id: request.input('product_type_id'),
       })
 
       return response.status(201).json({
+        status: 'success',
         message: 'Product Category created successfully',
-        data: ProductCategory,
+        data: productCategory,
       })
     } catch (error) {
-      throw new CustomHandlerException(error.messages, 500)
+      return response.status(422).json({ status: 'error', message: error.message, data: '' })
     }
   }
 
@@ -62,9 +59,11 @@ export default class ProductCategoriesController {
       })
       .preload('productType')
 
-    return response
-      .status(200)
-      .json({ message: 'berhasil get data booking by id', data: ProductCategory })
+    return response.status(200).json({
+      status: 'success',
+      message: 'Product Type Category Successfully',
+      data: productCategory,
+    })
   }
 
   public async update({ response, request, auth, params }: HttpContextContract) {
@@ -79,7 +78,9 @@ export default class ProductCategoriesController {
       })
 
     return response.status(201).json({
+      status: 'success',
       message: 'Succesfull Update Data Product Category',
+      data: '',
     })
   }
 
@@ -88,6 +89,10 @@ export default class ProductCategoriesController {
 
     await ProductCategory.query().where('id', params.id).delete()
 
-    return response.status(200).json({ message: 'Success Delete Product Category' })
+    return response.status(200).json({
+      status: 'success',
+      message: 'Success Delete Product Category',
+      data: '',
+    })
   }
 }

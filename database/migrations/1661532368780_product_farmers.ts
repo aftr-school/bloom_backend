@@ -15,10 +15,9 @@ export default class extends BaseSchema {
         .inTable('products')
         .onDelete('CASCADE').notNullable
 
-      table.integer('price').comment('Selling Price')
-      table.integer('quantity').comment('Selling Quantity')
+      table.bigInteger('price').unsigned().comment('Selling Price')
+      table.float('quantity').unsigned().comment('Selling Quantity')
       table.integer('anual_harvest')
-      table.dateTime('selling_dates').comment('Selling Dates')
 
       table.timestamps(true, true)
     })

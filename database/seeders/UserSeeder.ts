@@ -11,6 +11,7 @@ export default class extends BaseSeeder {
         email: 'super.afterschool@gmail.com',
         password: 'Sup3r4fter',
         role_id: 1,
+        isVerified: true,
       },
     ])
   }

@@ -4,21 +4,19 @@ import ProductType from 'App/Models/ProductType'
 import { schema } from '@ioc:Adonis/Core/Validator'
 
 export default class ProductTypesController {
-  public async index({ response, auth, params }: HttpContextContract) {
+  public async index({ response, auth, params, request }: HttpContextContract) {
     const user = await auth.authenticate()
 
-    let paginateModel = params.paginate
-    if (!paginateModel) {
-      paginateModel = 10
-    }
-
-    const productTypes = await ProductType.query().orderBy('name', 'asc').paginate(paginateModel)
+    const productTypes = await ProductType.query().orderBy('name', 'asc')
 
     if (productTypes.length === 0) {
-      throw new CustomHandlerException('No Product Type found', 404)
+      return response
+        .status(404)
+        .json({ status: 'error', message: 'No Product Type found', data: '' })
     }
 
     return response.status(200).json({
+      tatus: 'success',
       message: 'Product Type retrieved successfully',
       data: productTypes,
     })
@@ -34,16 +32,17 @@ export default class ProductTypesController {
     await request.validate({ schema: productTypeSchema })
 
     try {
-      const productType = ProductType.create({
+      const productType = await ProductType.create({
         name: request.input('name'),
       })
 
       return response.status(201).json({
-        message: 'Product Type created successfully',
+        status: 'success',
+        message: 'Product Type Successfully Stored',
         data: productType,
       })
     } catch (error) {
-      throw new CustomHandlerException(error.messages, 500)
+      return response.status(422).json({ status: 'error', message: error.message, data: '' })
     }
   }
 
@@ -58,9 +57,11 @@ export default class ProductTypesController {
       })
       .preload('productCategory')
 
-    return response
-      .status(200)
-      .json({ message: 'berhasil get data booking by id', data: productType })
+    return response.status(200).json({
+      status: 'success',
+      message: 'List Product Type Successfully retrived',
+      data: productType,
+    })
   }
 
   public async update({ response, request, auth, params }: HttpContextContract) {
@@ -73,9 +74,9 @@ export default class ProductTypesController {
         name: request.input('name'),
       })
 
-    return response.status(201).json({
-      message: 'Succesfull Update Data Product Type',
-    })
+    return response
+      .status(201)
+      .json({ status: 'success', message: 'Succesfull Update Data Product Type', data: '' })
   }
 
   public async destroy({ response, params, auth }: HttpContextContract) {
@@ -83,6 +84,8 @@ export default class ProductTypesController {
 
     await ProductType.query().where('id', params.id).delete()
 
-    return response.status(200).json({ message: 'Success Delete Product Type' })
+    return response
+      .status(200)
+      .json({ status: 'success', message: 'Success Delete Product Type', data: '' })
   }
 }
