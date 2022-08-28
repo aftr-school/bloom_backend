@@ -9,7 +9,7 @@ export default class UsersController {
 
     const latitude = request.input('lat')
     const longitude = request.input('long')
-    const radius = request.input('radius') ?? 10
+    const radius = request.input('radius') ?? 50
 
     if (!latitude || !longitude) {
       return response

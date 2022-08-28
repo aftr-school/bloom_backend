@@ -15,7 +15,9 @@ export default class Admin {
     if (await this.userRepository.checkRolesAdmin(userRoleId)) {
       await next()
     } else {
-      return response.unauthorized('You are not authorized this route')
+      return response
+        .status(203)
+        .json({ status: 'error', message: 'You are not authorized', data: '' })
     }
   }
 }

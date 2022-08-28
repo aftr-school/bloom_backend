@@ -8,10 +8,16 @@ export default class ProductDistributor extends BaseModel {
   public id: number
 
   @column()
+  public user_id: number
+
+  @column()
   public product: string
 
   @column()
   public price: number
+
+  @column()
+  public uom: string
 
   @belongsTo(() => User, {
     foreignKey: 'user_id',

@@ -43,4 +43,5 @@ Server.middleware.registerNamed({
   verify: () => import('App/Middleware/Verify'),
   admin: () => import('App/Middleware/Admin'),
   farmer: () => import('App/Middleware/Farmer'),
+  distributor: () => import('App/Middleware/Distributor'),
 })

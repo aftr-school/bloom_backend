@@ -7,6 +7,7 @@ import ProductFarmer from 'App/Models/ProductFarmer'
 import Application from '@ioc:Adonis/Core/Application'
 import { DateTime } from 'luxon'
 import ProductImage from 'App/Models/ProductImage'
+import { base64 } from '@ioc:Adonis/Core/Helpers'
 
 export default class ProductsController {
   public async index({ response, request, auth, params }: HttpContextContract) {
@@ -101,15 +102,24 @@ export default class ProductsController {
 
   public async store({ response, request, auth, params }: HttpContextContract) {
     const user = await auth.authenticate()
-
-    const images = request.files('images', {
-      size: '2mb',
-      extnames: ['jpg', 'png'],
-    })
+    let images
+    if (request.input('images')) {
+      images = base64.decode(request.input('images'))
+    }
+    if (request.files('images')) {
+      images = request.files('images', {
+        size: '2mb',
+        extnames: ['jpg', 'png', 'jpeg'],
+      })
+    }
 
     let uploadImage: any[] = []
 
     await request.validate(ProductValidator)
+
+    console.log(['requestFile', request.files('images')])
+    console.log(['requestBase', request.input('images')])
+    console.log(['get', images])
 
     try {
       const product = await Product.create({

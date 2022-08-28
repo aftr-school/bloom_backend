@@ -14,6 +14,7 @@ import Hash from '@ioc:Adonis/Core/Hash'
 import RegisterValidator from 'App/Validators/RegisterValidator'
 import Application from '@ioc:Adonis/Core/Application'
 import AddressRepository from 'App/Repositories/AddressRepository'
+import Role from 'App/Models/Role'
 
 export default class AuthController {
   protected userRepository: UserRepository
@@ -129,6 +130,7 @@ export default class AuthController {
     }
   }
 
+  // Need Update
   public async update({ request, response, auth }: HttpContextContract) {
     const user = await auth.authenticate()
 
@@ -147,13 +149,24 @@ export default class AuthController {
       extnames: ['jpg', 'png'],
     })
     let fileName = 'avatar-' + user.username
+    let fullName
+    if (avatar) {
+      await avatar.move(Application.tmpPath('uploads/images/avatar'), {
+        name: fileName + '.' + avatar.extname,
+      })
+      fullName = fileName + '.' + avatar.extname
+    }
 
-    const userData = {
+    let userData = {
       name: request.input('name'),
       username: request.input('username'),
       email: request.input('email'),
       password: request.input('password'),
-      avatar: fileName,
+    }
+
+    if (fullName) {
+      let avatar = { avatar: fullName }
+      userData = { ...userData, ...avatar }
     }
 
     const addressData = {
@@ -167,17 +180,11 @@ export default class AuthController {
     }
 
     try {
-      if (Object.keys(userData).length === 0) {
+      if (Object.keys(userData).length !== 0) {
         await User.query().where('id', user.id).update(userData)
       }
-      if (Object.keys(addressData).length === 0) {
+      if (Object.keys(addressData).length !== 0) {
         await Address.query().where('user_id', user.id).update(addressData)
-      }
-
-      if (avatar) {
-        await avatar.move(Application.tmpPath('uploads/images/avatar'), {
-          name: fileName + '.' + avatar.extname,
-        })
       }
 
       return response.status(202).json({
@@ -193,24 +200,24 @@ export default class AuthController {
   public async user({ response, auth }: HttpContextContract) {
     const user = await auth.authenticate()
 
-    let userData = await User.query()
-      .where('id', user.id)
-      .preload('role')
-      .preload('address')
-      .first()
+    let userData = await User.query().where('id', user.id).preload('address').first()
+
+    let role = await Role.query().where('id', user.role_id).first()
+
+    let userAddress = await Address.query().where('user_id', user.id).first()
 
     if (!userData) {
       return response.status(404).json({ status: 'error', message: 'User Not Found', data: '' })
     }
 
-    const address = await this.addressRepository.getAddress(
+    const regionalAddress = await this.addressRepository.getAddress(
       userData.address.villages_id,
       userData.address.districts_id,
       userData.address.regencies_id,
       userData.address.provinces_id
     )
-
-    let data = { ...userData.$original, ...address }
+    let address = { ...userAddress?.$original, ...regionalAddress }
+    let data = { ...userData.$original, role, address }
 
     return response.json({
       message: 'Get User Successfully',

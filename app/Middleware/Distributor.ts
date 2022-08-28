@@ -1,7 +1,7 @@
 import type { HttpContextContract } from '@ioc:Adonis/Core/HttpContext'
 import UserRepository from 'App/Repositories/UserRepository'
 
-export default class Farmer {
+export default class Distributor {
   protected userRepository: UserRepository
 
   constructor() {
@@ -12,7 +12,7 @@ export default class Farmer {
     // code for middleware goes here. ABOVE THE NEXT CALL
     let userRoleId: number = auth.user?.role_id!
 
-    if (await this.userRepository.checkRolesFarmer(userRoleId)) {
+    if (await this.userRepository.checkRolesDistributor(userRoleId)) {
       await next()
     } else {
       return response
