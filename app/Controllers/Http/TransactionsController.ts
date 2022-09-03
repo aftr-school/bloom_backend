@@ -9,6 +9,7 @@ import TransactionValidator from 'App/Validators/TransactionValidator'
 import Application from '@ioc:Adonis/Core/Application'
 import { schema } from '@ioc:Adonis/Core/Validator'
 import { DateTime } from 'luxon'
+import ProductFarmer from 'App/Models/ProductFarmer'
 
 export default class TransactionsController {
   protected userRepository: UserRepository
@@ -45,7 +46,7 @@ export default class TransactionsController {
   public async show({ response, request, auth, params }: HttpContextContract) {
     const user = await auth.authenticate()
 
-    let transactions
+    let transactions: any
     if (await this.userRepository.checkRolesAdmin(user.role_id)) {
       transactions = await Transaction.query().where('id', params.id).orderBy('id', 'asc')
     } else {
@@ -61,7 +62,7 @@ export default class TransactionsController {
     })
   }
 
-  public async store({ request, response, auth }: HttpContextContract) {
+  public async offerProduct({ request, response, auth }: HttpContextContract) {
     const user = await auth.authenticate()
 
     await request.validate(TransactionValidator)
@@ -69,6 +70,7 @@ export default class TransactionsController {
     const productId = request.input('product_id')
     const quantity = request.input('quantity')
     const service = request.input('service')
+    const price = request.input('price')
     const dateTime = DateTime.now()
 
     const product = await Product.query().where('id', productId).preload('productFarmer').first()
@@ -78,15 +80,34 @@ export default class TransactionsController {
         .json({ status: 'error', message: 'Product is not available', data: '' })
     }
 
+    const productLimitBelowPrice =
+      product.productFarmer.price - product.productFarmer.price * (10 / 100)
+    const productLimitAbovePrice =
+      product.productFarmer.price - product.productFarmer.price * (20 / 100)
+
+    if (price && productLimitBelowPrice > price) {
+      return response
+        .status(203)
+        .json({ status: 'error', message: 'You can not offer below 10%', data: '' })
+    }
+
+    if (price && productLimitAbovePrice < price) {
+      return response
+        .status(203)
+        .json({ status: 'error', message: 'You can not offer above 20%', data: '' })
+    }
+
     try {
       const transaction = await Transaction.create({
         distributor_id: user.id,
         farmer_id: product.productFarmer.user_id,
+        product_id: productId,
         product: product.name,
         service: service,
         uom: product.uom,
         status: 'offer',
         quantity: quantity,
+        price: price ?? product.productFarmer.price,
         transaction_dates: dateTime,
       })
 
@@ -163,10 +184,32 @@ export default class TransactionsController {
         .status(203)
         .json({ status: 'error', message: 'You are not authorized', data: '' })
     }
+
+    let productFarmer = await ProductFarmer.query()
+      .where('product_id', transaction.product_id)
+      .first()
+
+    if (!productFarmer) {
+      return response
+        .status(404)
+        .json({ status: 'error', message: 'Product is not available', data: '' })
+    }
+
+    if (productFarmer.quantity > transaction.quantity) {
+      return response
+        .status(203)
+        .json({ status: 'error', message: 'Product quantity is smaller than required', data: '' })
+    }
+
     if (answer === 'true' || answer === 1) {
       await Transaction.query().where('id', params.id).update({
         status: 'payment',
       })
+
+      // reducing product quantity
+      productFarmer.quantity = productFarmer.quantity - transaction.quantity
+      await productFarmer.save()
+
       return response.status(200).json({
         status: 'success',
         message: 'You Accepted the Offer',

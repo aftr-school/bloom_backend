@@ -117,10 +117,6 @@ export default class ProductsController {
 
     await request.validate(ProductValidator)
 
-    console.log(['requestFile', request.files('images')])
-    console.log(['requestBase', request.input('images')])
-    console.log(['get', images])
-
     try {
       const product = await Product.create({
         name: request.input('name'),

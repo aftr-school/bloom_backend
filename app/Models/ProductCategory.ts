@@ -11,7 +11,7 @@ export default class ProductCategory extends BaseModel {
   public name: string
 
   @column()
-  public product_type_id: string
+  public product_type_id: number
 
   @belongsTo(() => ProductType, {
     foreignKey: 'product_type_id',

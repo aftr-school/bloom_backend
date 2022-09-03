@@ -51,6 +51,11 @@ export default class Product extends BaseModel {
   })
   public productImage: HasMany<typeof ProductImage>
 
+  @hasMany(() => ProductDistributor, {
+    foreignKey: 'product_id',
+  })
+  public productDistributor: HasMany<typeof ProductDistributor>
+
   @column.dateTime({ autoCreate: true })
   public createdAt: DateTime
 
